@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
+First release. Export (stage 1), build (stage 2) and preflight work end to end. They were validated on a real 501-page notebook: all pages exported, no failures.
+
 ### Added
 
 - **Stage 1: `Export-LooseleafNotebook`.** Exports the configured notebooks through late-bound COM (no Office Interop assembly):
@@ -45,3 +49,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The stage 2 command is `Update-LooseleafVault` instead of `Build-LooseleafVault`: `Build` isn't an approved verb in Windows PowerShell 5.1.
 - No development dependencies: tests target the Pester version that ships with Windows, and PSScriptAnalyzer is optional.
 - Settings that aren't implemented yet were removed from the allowed values: `ComplexTables = Flatten` and `ClipSources = FrontMatter`.
+
+[Unreleased]: https://github.com/z3lat0r/looseleaf/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/z3lat0r/looseleaf/releases/tag/v0.1.0
