@@ -91,7 +91,8 @@
         Get-LLNotebookPage -Items @(Get-LLValue $notebook 'items' @()) -SectionName '' -Into $pages
         $summary.Pages = $pages.Count
 
-        $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('Looseleaf-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        # Inside WorkPath (not %TEMP%), so one antivirus exclusion covers all of Looseleaf's files.
+        $tempRoot = Join-Path $config.WorkPath ('tmp\' + [guid]::NewGuid().ToString('N').Substring(0, 8))
         [void][IO.Directory]::CreateDirectory($tempRoot)
         $results = @{}
         $emptyKeys = @{}

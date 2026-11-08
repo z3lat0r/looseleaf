@@ -145,7 +145,7 @@ The manifest is saved after every N pages and at the end. Each save writes to `m
 
 ### 5.1 For each page (in manifest order)
 
-1. Create a fresh **temporary folder for this page only** (under `%TEMP%\Looseleaf\<run>\<key>`). It's deleted afterwards whether the page succeeds or fails. No images from one page can leak into another (ON2MD bug 2).
+1. Create a fresh **temporary folder for this page only** (under `<WorkPath>\tmp\<run>\<n>`, not `%TEMP%`, so that one antivirus exclusion for `WorkPath` covers it). It's deleted afterwards whether the page succeeds or fails. No images from one page can leak into another (ON2MD bug 2).
 2. **Pre-process a copy of the `.docx`** in the temporary folder (rule C2 in §6.5). Runs set in a monospace font get Word's `Verbatim Char` character style. OneNote uses direct font formatting (for example Consolas or Cascadia Code), and pandoc ignores fonts, so without this step code would come out as plain text. The cached `.docx` itself is never changed.
 3. Run pandoc:
    `pandoc -f docx -t <PandocFormat> --wrap=none --markdown-headings=atx --lua-filter=filters/looseleaf.lua -M looseleaf-image-prefix=<prefix> -M looseleaf-media-dir=<temp>/media -o <temp>/page.md <temp>/page.docx`

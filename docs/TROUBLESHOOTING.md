@@ -48,7 +48,8 @@ Notes about security topics (exploit code, reverse shells, payloads, password-cr
 If it keeps happening:
 
 - Check *Windows Security → Virus & threat protection → Protection history* for quarantined files.
-- If you trust the content, add folder exclusions for `WorkPath` and your vault (*Manage settings → Exclusions*). Only do this if your organisation's policy allows it.
+- If you trust the content, add folder exclusions for `WorkPath` and your vault (*Manage settings → Exclusions*). Only do this if your organisation's policy allows it. Looseleaf keeps all its temporary files under `WorkPath\tmp`, so no other folder is involved.
+- Excluding the vault matters too: Obsidian, sync tools and backups read those notes later, and an antivirus scan can still quarantine a note after Looseleaf has written it.
 
 ## pandoc not found
 
