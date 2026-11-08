@@ -49,6 +49,43 @@
     }
 }
 
+function Test-LLNaturalOrder {
+    <#
+    .SYNOPSIS
+        $true if the names are already in natural sort order (case-insensitive, numbers
+        compared by value: '1.9' < '1.10' < '2 - x' < 'Exam'), i.e. the order in which
+        Obsidian's file explorer would list them, and no two names compare equal.
+    #>
+    param ([string[]]$Names)
+    for ($i = 1; $i -lt $Names.Count; $i++) {
+        if ((Compare-LLNatural $Names[$i - 1] $Names[$i]) -ge 0) { return $false }
+    }
+    $true
+}
+
+function Compare-LLNatural {
+    # Natural comparison: digit runs by numeric value, other text case-insensitively.
+    param ([string]$A, [string]$B)
+    $pa = [regex]::Matches($A, '\d+|\D+')
+    $pb = [regex]::Matches($B, '\d+|\D+')
+    $n = [Math]::Min($pa.Count, $pb.Count)
+    for ($i = 0; $i -lt $n; $i++) {
+        $x = $pa[$i].Value; $y = $pb[$i].Value
+        $xd = $x -match '^\d'; $yd = $y -match '^\d'
+        if ($xd -and $yd) {
+            # numeric value without overflow: fewer significant digits = smaller
+            $xs = $x.TrimStart('0'); $ys = $y.TrimStart('0')
+            $c = if ($xs.Length -ne $ys.Length) { $xs.Length - $ys.Length } else { [string]::CompareOrdinal($xs, $ys) }
+        } elseif ($xd -ne $yd) {
+            $c = if ($xd) { -1 } else { 1 } # digits sort before letters
+        } else {
+            $c = [string]::Compare($x, $y, [StringComparison]::OrdinalIgnoreCase)
+        }
+        if ($c -ne 0) { return [Math]::Sign($c) }
+    }
+    [Math]::Sign($pa.Count - $pb.Count)
+}
+
 function ConvertTo-LLContainerEntry {
     # Section groups and sections, in OneNote order.
     param ([object[]]$Items)
@@ -124,31 +161,44 @@ function Add-LLPlanEntry {
     $used = @{}
     $index = 0
 
+    $bases = New-Object System.Collections.Generic.List[string]
     foreach ($entry in $visible) {
-        $index++
-        $base = Get-LLSafeName -Name $entry.Name -NameSpaces $cfg.NameSpaces -MaxLength $cfg.MaxNameLength
-        $name = if ($cfg.OrderPrefix) { ("{0:D$width}-{1}" -f $index, $base) } else { $base }
+        $bases.Add((Get-LLSafeName -Name $entry.Name -NameSpaces $cfg.NameSpaces -MaxLength $cfg.MaxNameLength))
+    }
+    # Auto: no prefixes when the plain names already sort into OneNote order (as Obsidian sorts).
+    $usePrefix = switch ($cfg.OrderPrefix) {
+        'Always' { $true }
+        'Never' { $false }
+        default { -not (Test-LLNaturalOrder -Names $bases.ToArray()) }
+    }
 
+    foreach ($entry in $visible) {
+        $base = $bases[$index]
+        $index++
+        $name = if ($usePrefix) { ("{0:D$width}-{1}" -f $index, $base) } else { $base }
+
+        # 1. Fit the longest path that uses this name (<name>.md) within MaxPathLength,
+        #    leaving room for a '-N' clash suffix.
+        $dirPath = if ($RelDir) { Join-Path $Context.NotebookDir $RelDir } else { $Context.NotebookDir }
+        $fullLength = (Join-Path $dirPath "$name.md").Length
+        if ($fullLength -gt $cfg.MaxPathLength) {
+            $newLength = [Math]::Max(16, $name.Length - ($fullLength - $cfg.MaxPathLength) - 3)
+            $shortened = Get-LLShortenedName -Name $name -MaxLength ([Math]::Min($newLength, $name.Length))
+            $Context.Warnings.Add("Name shortened to fit MaxPathLength: '$name' -> '$shortened' in '$RelDir'.")
+            $name = $shortened
+        }
+
+        # 2. Then make it unique in this folder (shortening can make two names equal).
         $candidate = $name
         $n = 2
         while ($used.ContainsKey($candidate.ToLowerInvariant())) {
             $candidate = "$name-$n"
             $n++
         }
-
-        # Keep the longest path that uses this name (<name>.md) within MaxPathLength.
-        $dirPath = if ($RelDir) { Join-Path $Context.NotebookDir $RelDir } else { $Context.NotebookDir }
-        $fullLength = (Join-Path $dirPath "$candidate.md").Length
-        if ($fullLength -gt $cfg.MaxPathLength) {
-            $newLength = [Math]::Max(16, $candidate.Length - ($fullLength - $cfg.MaxPathLength))
-            $shortened = $candidate.Substring(0, [Math]::Min($newLength, $candidate.Length)).TrimEnd(' ', '-', '.')
-            $Context.Warnings.Add("Name shortened to fit MaxPathLength: '$candidate' -> '$shortened' in '$RelDir'.")
-            $candidate = $shortened
-            if ((Join-Path $dirPath "$candidate.md").Length -gt $cfg.MaxPathLength) {
-                $Context.Warnings.Add("Path still longer than MaxPathLength ($($cfg.MaxPathLength)): $(Join-Path $dirPath "$candidate.md")")
-            }
-        }
         $used[$candidate.ToLowerInvariant()] = $true
+        if ((Join-Path $dirPath "$candidate.md").Length -gt $cfg.MaxPathLength) {
+            $Context.Warnings.Add("Path still longer than MaxPathLength ($($cfg.MaxPathLength)): $(Join-Path $dirPath "$candidate.md")")
+        }
         $childRel = if ($RelDir) { "$RelDir\$candidate" } else { $candidate }
 
         if ($entry.Kind -eq 'container') {

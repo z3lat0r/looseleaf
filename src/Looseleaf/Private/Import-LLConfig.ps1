@@ -10,7 +10,7 @@ $script:LLConfigSchema = [ordered]@{
     RestoreCollapsed    = @{ Type = 'bool'; Default = $true }
     ExportInkPagesAsPdf = @{ Type = 'bool'; Default = $false }
     # Stage 2: layout and naming
-    OrderPrefix         = @{ Type = 'bool'; Default = $true }
+    OrderPrefix         = @{ Type = 'string'; Default = 'Auto'; Allowed = @('Auto', 'Always', 'Never'); BoolAlias = @('Always', 'Never') }
     MediaScope          = @{ Type = 'string'; Default = 'Notebook'; Allowed = @('Notebook', 'Folder') }
     ImageNameStyle      = @{ Type = 'string'; Default = 'SectionPage'; Allowed = @('SectionPage', 'Page') }
     MaxImageLabelLength = @{ Type = 'int'; Default = 40; Min = 8; Max = 80 }
@@ -119,6 +119,9 @@ function Resolve-LLConfig {
                 }
             }
             'string' {
+                if ($value -is [bool] -and $rule.ContainsKey('BoolAlias')) {
+                    $value = if ($value) { $rule.BoolAlias[0] } else { $rule.BoolAlias[1] } # $true/$false still accepted
+                }
                 if ($value -isnot [string] -or [string]::IsNullOrWhiteSpace($value)) {
                     $problem = 'must be a non-empty string'
                 } elseif ($rule.ContainsKey('Allowed')) {

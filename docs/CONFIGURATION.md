@@ -38,7 +38,7 @@ Copy-Item .\looseleaf.config.example.psd1 .\looseleaf.config.psd1
 
 | Setting | Type | Default | Allowed | Description |
 | --- | --- | --- | --- | --- |
-| `OrderPrefix` | bool | `$true` | | Adds `NN-` to file and folder names so Obsidian sorts them in OneNote order. |
+| `OrderPrefix` | string | `Auto` | `Auto`, `Always`, `Never` (`$true` = `Always`, `$false` = `Never`) | Adds `NN-` to file and folder names so Obsidian sorts them in OneNote order. `Auto` adds no prefixes in a folder whose plain names already sort into OneNote order. Numbers are compared by value (`1.9` before `1.10`) and digits come before letters. This avoids `01-1 - Basics` when you number sections yourself. |
 | `MediaScope` | string | `Notebook` | `Notebook`, `Folder` | One shared `media/` folder per notebook, or a `media/` folder next to each note. |
 | `ImageNameStyle` | string | `SectionPage` | `SectionPage`, `Page` | `<Section>-<Page>-NN.ext` or `<Page>-NN.ext`. Names are made unique either way. |
 | `MaxImageLabelLength` | int | `40` | 8–80 | Maximum length of each section or page label inside an image name. |

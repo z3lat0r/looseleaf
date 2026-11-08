@@ -32,8 +32,8 @@ param (
 
 $ErrorActionPreference = 'Stop'
 $moduleRoot = Join-Path $PSScriptRoot '..\src\Looseleaf'
-foreach ($name in 'Read-LLZipXml', 'Write-LLZipXml', 'ConvertTo-LLCodeMarkedDocx') {
-    . (Join-Path $moduleRoot "Private\$name.ps1")
+foreach ($file in Get-ChildItem -Path (Join-Path $moduleRoot 'Private\*.ps1')) {
+    . $file.FullName
 }
 $filter = (Resolve-Path (Join-Path $moduleRoot 'filters\looseleaf.lua')).Path
 

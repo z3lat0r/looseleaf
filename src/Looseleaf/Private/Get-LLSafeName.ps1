@@ -55,10 +55,38 @@
 
     # 8. Length
     if ($n.Length -gt $MaxLength) {
-        $n = $n.Substring(0, $MaxLength).TrimEnd(' ', '-', '.')
-        if (-not $n) { $n = 'Untitled' }
+        $n = Get-LLShortenedName -Name $n -MaxLength $MaxLength
     }
     $n
+}
+
+function Get-LLShortenedName {
+    <#
+    .SYNOPSIS
+        Shortens a name to MaxLength at a word boundary when possible, and drops a trailing
+        unclosed bracket and dangling separators:
+        'Exploiting MS17-010 SMB Vulnerability (EternalBlue)' (45) -> 'Exploiting MS17-010 SMB Vulnerability'
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param (
+        [Parameter(Mandatory)][string]$Name,
+        [Parameter(Mandatory)][int]$MaxLength
+    )
+    if ($Name.Length -le $MaxLength) { return $Name }
+    $cut = $Name.Substring(0, $MaxLength)
+    if ($Name[$MaxLength] -ne ' ') {
+        $space = $cut.LastIndexOf(' ')
+        if ($space -ge [int]($MaxLength * 0.6)) { $cut = $cut.Substring(0, $space) }
+    }
+    $open = $cut.LastIndexOf('(')
+    if ($open -ge 0 -and $cut.IndexOf(')', $open) -lt 0 -and $open -ge [int]($MaxLength * 0.5)) {
+        $cut = $cut.Substring(0, $open)
+    }
+    $cut = $cut.TrimEnd(' ', '-', '.', ',', '&', '(', '_')
+    if (-not $cut) { $cut = $Name.Substring(0, $MaxLength).TrimEnd(' ', '-', '.') }
+    if (-not $cut) { $cut = 'Untitled' }
+    $cut
 }
 
 function Get-LLImageLabel {

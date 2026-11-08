@@ -50,7 +50,7 @@ Describe 'Update-LooseleafVault' {
     Save-Manifest
 
     $configPath = Join-Path $root 'looseleaf.config.psd1'
-    [IO.File]::WriteAllText($configPath, "@{ Notebooks = @('My Notebook'); WorkPath = '$work'; VaultPath = '$vault' }")
+    [IO.File]::WriteAllText($configPath, "@{ Notebooks = @('My Notebook'); WorkPath = '$work'; VaultPath = '$vault'; OrderPrefix = 'Always' }")
 
     $nb = Join-Path $vault 'My Notebook'
     $pageOne = Join-Path $nb '01-Section A\01-Page One.md'

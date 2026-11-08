@@ -29,8 +29,9 @@
 
     # --- Stage 2: layout and naming ------------------------------------------
 
-    # Prefix files and folders with NN- to keep OneNote order in Obsidian.
-    OrderPrefix         = $true
+    # NN- prefixes to keep OneNote order in Obsidian:
+    # Auto = only in folders whose names don't already sort correctly | Always | Never
+    OrderPrefix         = 'Auto'
 
     # Notebook = one shared media/ folder per notebook; Folder = media/ next to each note.
     MediaScope          = 'Notebook'

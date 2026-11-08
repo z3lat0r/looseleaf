@@ -32,6 +32,22 @@ Describe 'Get-LLSafeName (DESIGN 6.2)' {
     }
 }
 
+Describe 'Get-LLShortenedName' {
+    It 'cuts at a word boundary and drops an unclosed bracket' {
+        Get-LLShortenedName -Name '09-Exploiting Windows MS17-010 SMB Vulnerability (EternalBlue)' -MaxLength 53 |
+            Should BeExactly '09-Exploiting Windows MS17-010 SMB Vulnerability'
+    }
+    It 'drops dangling separators' {
+        Get-LLShortenedName -Name 'Common Web Application Threats & Risks' -MaxLength 32 | Should BeExactly 'Common Web Application Threats'
+    }
+    It 'cuts inside a word when there is no usable space' {
+        Get-LLShortenedName -Name 'Supercalifragilistic' -MaxLength 10 | Should BeExactly 'Supercalif'
+    }
+    It 'leaves short names alone' {
+        Get-LLShortenedName -Name 'Short' -MaxLength 10 | Should BeExactly 'Short'
+    }
+}
+
 Describe 'Get-LLImageLabel' {
     It 'is ASCII only, without spaces or brackets' {
         Get-LLImageLabel 'Café & Crème (Demo)' | Should BeExactly 'Cafe-and-Creme-Demo'
@@ -50,7 +66,7 @@ Describe 'Resolve-LLConfig' {
     It 'fills in defaults' {
         $cfg = Resolve-LLConfig -Data $minimal
         $cfg.BoxTables | Should BeExactly 'Auto'
-        $cfg.OrderPrefix | Should Be $true
+        $cfg.OrderPrefix | Should BeExactly 'Auto'
         $cfg.MaxImageWidth | Should Be 1000
     }
     It 'returns allowed values in canonical casing' {
@@ -91,7 +107,7 @@ Describe 'ConvertTo-LLProcessArgument' {
 }
 
 Describe 'Get-LLPagePlan (DESIGN 6.1)' {
-    $config = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V' }
+    $config = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V'; OrderPrefix = 'Always' }
     $notebook = ConvertTo-LLTestManifestObject @{
         name  = 'NB'
         items = @(
@@ -147,7 +163,7 @@ Describe 'Get-LLPagePlan (DESIGN 6.1)' {
     }
 
     Context 'EmptyPages = Skip' {
-        $cfg = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V'; EmptyPages = 'Skip' }
+        $cfg = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V'; EmptyPages = 'Skip'; OrderPrefix = 'Always' }
         $plan = Get-LLPagePlan -Notebook $notebook -Config $cfg -NotebookDir 'C:\V\NB' -EmptyKeys $empty
         $byKey = @{}; foreach ($e in $plan.Entries) { $byKey[$e.Key] = $e }
         It 'moves subpages of an empty page up one level' {
@@ -171,6 +187,40 @@ Describe 'Get-LLPagePlan (DESIGN 6.1)' {
         }
     }
 
+    Context 'OrderPrefix = Auto (default)' {
+        $cfg = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V' }
+        $nb = ConvertTo-LLTestManifestObject @{ name = 'NB'; items = @(
+                @{ type = 'section'; name = '1 - Basics'; order = 1; pages = @(
+                        (New-LLTestPage 'a' 'Zeta' 1),
+                        (New-LLTestPage 'b' 'Alpha' 2)
+                    )
+                }
+                @{ type = 'section'; name = '2 - Advanced'; order = 2; pages = @(
+                        (New-LLTestPage 'c' '1.9 Nine' 1),
+                        (New-LLTestPage 'd' '1.10 Ten' 2)
+                    )
+                }
+                @{ type = 'section'; name = 'Exam'; order = 3; pages = @((New-LLTestPage 'e' 'Only page' 1)) }
+            )
+        }
+        $plan = Get-LLPagePlan -Notebook $nb -Config $cfg -NotebookDir 'C:\V\NB' -EmptyKeys @{}
+        $byKey = @{}; foreach ($e in $plan.Entries) { $byKey[$e.Key] = $e }
+        It 'keeps names that already sort in OneNote order (numbers by value, then letters)' {
+            $byKey.a.RelDir | Should BeExactly '1 - Basics'
+            $byKey.e.RelDir | Should BeExactly 'Exam'
+            $byKey.e.FileName | Should BeExactly 'Only page.md'
+            $byKey.c.FileName | Should BeExactly '1.9 Nine.md'
+            $byKey.d.FileName | Should BeExactly '1.10 Ten.md'
+        }
+        It 'prefixes a folder whose names would sort differently' {
+            $byKey.a.FileName | Should BeExactly '01-Zeta.md'
+            $byKey.b.FileName | Should BeExactly '02-Alpha.md'
+        }
+        It 'accepts $true as Always' {
+            (Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V'; OrderPrefix = $true }).OrderPrefix | Should BeExactly 'Always'
+        }
+    }
+
     Context 'MaxPathLength' {
         $cfg = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V'; MaxPathLength = 100 }
         $nb = ConvertTo-LLTestManifestObject @{ name = 'NB'; items = @(
@@ -181,6 +231,17 @@ Describe 'Get-LLPagePlan (DESIGN 6.1)' {
         It 'shortens names to fit and warns' {
             (Join-Path 'C:\V\NB' (Join-Path $plan.Entries[0].RelDir $plan.Entries[0].FileName)).Length | Should Not BeGreaterThan 100
             $plan.Warnings.Count | Should BeGreaterThan 0
+        }
+        It 'keeps names unique when shortening makes them equal' {
+            $cfg2 = Resolve-LLConfig -Data @{ Notebooks = @('NB'); WorkPath = 'C:\W'; VaultPath = 'C:\V'; MaxPathLength = 100; OrderPrefix = 'Never' }
+            $long = 'Web Application Technologies and a Very Long Descriptive Title That Goes On and On - Part '
+            $nb2 = ConvertTo-LLTestManifestObject @{ name = 'NB'; items = @(
+                    @{ type = 'section'; name = 'S'; order = 1; pages = @((New-LLTestPage 'a' ($long + '1') 1), (New-LLTestPage 'b' ($long + '2') 2)) }
+                )
+            }
+            $p2 = Get-LLPagePlan -Notebook $nb2 -Config $cfg2 -NotebookDir 'C:\V\NB' -EmptyKeys @{}
+            $p2.Entries[0].FileName | Should Not Be $p2.Entries[1].FileName
+            $p2.Entries[1].FileName | Should Match '-2\.md$'
         }
     }
 }

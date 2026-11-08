@@ -47,11 +47,12 @@
         $ns = New-Object System.Xml.XmlNamespaceManager $doc.NameTable
         $ns.AddNamespace('w', $wNs)
 
-        foreach ($p in @($doc.SelectNodes('//w:p', $ns))) {
+        foreach ($p in (Get-LLXmlNodeList $doc.SelectNodes('//w:p', $ns))) {
             $textRuns = 0
             $monoRuns = 0
-            foreach ($r in @($p.SelectNodes('w:r | w:hyperlink/w:r', $ns))) {
-                $text = (@($r.SelectNodes('w:t', $ns)) | ForEach-Object { $_.InnerText }) -join ''
+            foreach ($r in (Get-LLXmlNodeList $p.SelectNodes('w:r | w:hyperlink/w:r', $ns))) {
+                $text = ''
+                foreach ($t in $r.SelectNodes('w:t', $ns)) { $text += $t.InnerText }
                 if ([string]::IsNullOrWhiteSpace($text)) { continue }
                 $textRuns++
 

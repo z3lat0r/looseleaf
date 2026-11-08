@@ -212,8 +212,11 @@ Applied, in this order, to every notebook, section group, section, page and medi
 5. Spaces are kept by default (`NameSpaces = Keep`), or replaced with `-` (`Hyphen`). Image names never contain spaces, whatever this setting is.
 6. Prefix reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1–9`, `LPT1–9`, with or without an extension) with `_`.
 7. An empty result becomes `Untitled`.
-8. Shorten each name to `MaxNameLength`. Then, if the full path is longer than `MaxPathLength` (default 250, below Windows' traditional 260-character MAX_PATH), shorten the longest parts and warn.
-9. **Order prefix** (`OrderPrefix = $true`): `NN-` is prepended **after** cleaning, using two digits, or three if a folder has more than 99 items. The prefix is only ever added by Looseleaf, never parsed back out of a OneNote name, so a page called `2023-10-05 Meeting` keeps its date (ON2MD bug 9).
+8. Shorten each name to `MaxNameLength`. Then, if the full path is longer than `MaxPathLength` (default 250, below Windows' traditional 260-character MAX_PATH), shorten the name and warn. Shortening cuts at a word boundary where possible and drops an unclosed bracket, so `…SMB Vulnerability (EternalBlue)` becomes `…SMB Vulnerability`, not `…SMB Vulnerability (Ete`.
+9. **Order prefix:** `NN-` is prepended **after** cleaning, using two digits, or three if a folder has more than 99 items. The decision is made per folder by `OrderPrefix`:
+   - `Always`: every item gets a prefix.
+   - `Never`: no item gets one.
+   - `Auto` (default): a folder gets prefixes only if its plain names would *not* already sort into OneNote order. The sort is natural and case-insensitive, compares numbers by value, and puts digits before letters, which approximates Obsidian's file explorer. A notebook numbered by hand (`1 - Basics`, `1.1 - Intro`, …, `Exam`) therefore keeps its own names. The prefix is only ever added by Looseleaf, never parsed back out of a OneNote name, so a page called `2023-10-05 Meeting` keeps its date (ON2MD bug 9).
 10. Two items in the same folder that end up with the same name get `-2`, `-3`, and so on. Common page titles such as `Introduction` often repeat across sections; that's fine, because they're in different folders.
 
 ### 6.3 Image names and the media registry
@@ -298,6 +301,9 @@ These rules come from analysing a real 500-page notebook exported to `.docx` (se
   - `New-Item` has no `-LiteralPath`. Use `[IO.Directory]::CreateDirectory()`.
   - Use `[IO.File]::WriteAllText` with an explicit `UTF8Encoding($false)`. `Set-Content -Encoding UTF8` writes a BOM.
   - `>` and `*>` redirection write UTF-16LE (this is why the log is written by Looseleaf itself).
+  - **Never wrap a `List[object]` in `@(...)`.** On at least one current Windows 11 build (PowerShell 5.1.26100.9818, .NET Framework release 534296), `@($list)` throws "Argument types do not match" for `System.Collections.Generic.List[object]`. `List[string]`, `ArrayList` and arrays are not affected, nor are pipelines (`@($list | ...)`). Iterate with `foreach` and use `.Count` instead.
+  - Strict mode 3 is on inside the module and in the tests: initialise `$script:` variables before reading them.
+  - `Build` is not an approved verb before PowerShell 6, so stage 2 is `Update-LooseleafVault`.
 - pandoc 3.x. The minimum version is checked by the preflight.
 
 ## 11. Testing strategy
@@ -382,6 +388,25 @@ Known gaps:
 | 2 (rebuild, nothing changed) | 422 s | 410 unchanged, nothing rewritten, all image names stable |
 
 A rebuild is slower than the first build: it still converts every page and also hashes every existing note and image. That makes open question 5 (incremental builds) worth doing.
+
+### 12.4 First full run (2026-11-08)
+
+Stage 1 and stage 2 were run end to end on the real reference notebook. It was opened from its original location in OneNote desktop, with both OneNote and PowerShell running normally (not elevated).
+
+| Step | Time | Result |
+| --- | --- | --- |
+| `Test-LooseleafEnvironment` | seconds | All checks passed: same privilege level, notebook found with 5 sections and 501 pages, no locked sections |
+| `Export-LooseleafNotebook` | 1,512 s | 501 of 501 pages exported, 0 failed; no collapsed paragraphs, ink or attachments in this notebook |
+| `Update-LooseleafVault` (first build) | 219 s | 409 notes, 1,715 images, 91 empty pages as folders, 1 page failed (antivirus lock) |
+| Rebuild after the shortening fix | 408 s | 17 notes renamed (17 created, 17 stale removed), 392 unchanged |
+| Rebuild with `OrderPrefix = Auto` | 370 s | All 409 notes moved to their new paths and the old ones removed; the hand-numbered sections keep their names |
+
+Findings that changed the design:
+
+- **Double numbering** (`01-1 - Assessment Methodologies`) led to `OrderPrefix = Auto` (§6.2 rule 9).
+- **Names cut mid-word** to fit `MaxPathLength` led to word-boundary shortening. Shortening first and de-duplicating second also fixed a possible clash (`… - Part 1` / `… - Part 2`).
+- **The vault's location matters:** with a 75-character `VaultPath`, 6 deeply nested names still need shortening. A shorter vault path, or Windows long paths, avoids this.
+- **Antivirus:** the page about reverse shells is blocked every time while pandoc writes it. Excluding the work and temp folders, or accepting the gap, is the user's decision (TROUBLESHOOTING.md).
 
 ## 13. Open questions
 

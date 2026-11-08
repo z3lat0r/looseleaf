@@ -191,6 +191,18 @@
                         $attachmentLinks.Add((Format-LLMediaLink -FileName $fileName -Text $attName -LinkPrefix $linkPrefix -LinkStyle $config.LinkStyle))
                     }
 
+                    # PDF of a page with ink (ExportInkPagesAsPdf), linked like an attachment.
+                    $pdf = [string](Get-LLValue $entry.Page 'pdf' '')
+                    if ($pdf) {
+                        $pdfSrc = Join-Path $config.WorkPath $pdf
+                        if (Test-Path -LiteralPath $pdfSrc -PathType Leaf) {
+                            $desired = (Get-LLImageLabel $entry.Title -MaxLength $config.MaxImageLabelLength) + '-ink.pdf'
+                            $fileName = Resolve-LLMediaName -RegistryKey "$key|pdf" -Desired $desired -OldMedia $oldState.Media -NewMedia $newState.Media -Owned $owned
+                            [void](Write-LLManagedFile -Root $notebookDir -RelPath (Join-Path $mediaRelDir $fileName) -Bytes ([IO.File]::ReadAllBytes($pdfSrc)) -PageKey $key -OldFiles $oldState.Files -NewFiles $newState.Files -Mode 'Overwrite' -Cmdlet $PSCmdlet)
+                            $attachmentLinks.Add((Format-LLMediaLink -FileName $fileName -Text 'Original page with handwriting (PDF)' -LinkPrefix $linkPrefix -LinkStyle $config.LinkStyle))
+                        }
+                    }
+
                     $frontMatter = [ordered]@{
                         title        = $entry.Title
                         created      = [string](Get-LLValue $entry.Page 'created' '')

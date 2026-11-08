@@ -7,8 +7,8 @@
 > [!WARNING]
 > **Status: pre-alpha.** The architecture and behaviour are documented in [docs/DESIGN.md](docs/DESIGN.md).
 >
-> - **Done:** stage 2, `Update-LooseleafVault`, which builds the vault from a work folder. It's tested with Pester and validated on 502 real pages ([§12.3](docs/DESIGN.md#123-stage-2-results-2026-11-08)).
-> - **Not yet built:** stage 1 (`Export-LooseleafNotebook`, the OneNote export that writes the work folder) and `Test-LooseleafEnvironment`. Until stage 1 exists, stage 2 has no real input apart from hand-made test manifests.
+> - **Working end to end:** preflight (`Test-LooseleafEnvironment`), stage 1 (`Export-LooseleafNotebook`) and stage 2 (`Update-LooseleafVault`). The first full run exported a real 501-page notebook with no failures ([§12.4](docs/DESIGN.md#124-first-full-run-2026-11-08)).
+> - **Not yet built:** `ExpandCollapsed` (collapsed paragraphs are counted and reported instead) and incremental rebuilds.
 
 ## Why Looseleaf?
 
@@ -59,7 +59,9 @@ Looseleaf runs in two separate stages:
 
 **Administrator rights are not required.** PowerShell and OneNote just need to run at the *same* privilege level. Run both normally. See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
-## Quick start (planned)
+## Quick start
+
+Start OneNote **normally** (not as Administrator) with your notebook open. Then, in Windows PowerShell:
 
 ```powershell
 cd Looseleaf
@@ -67,10 +69,12 @@ Import-Module .\src\Looseleaf
 
 Copy-Item .\looseleaf.config.example.psd1 .\looseleaf.config.psd1   # once, then edit
 
-Test-LooseleafEnvironment -ConfigPath .\looseleaf.config.psd1   # preflight, read-only (planned)
-Export-LooseleafNotebook  -ConfigPath .\looseleaf.config.psd1   # stage 1, OneNote open (planned)
-Update-LooseleafVault     -ConfigPath .\looseleaf.config.psd1   # stage 2 (available; -WhatIf to preview)
+Test-LooseleafEnvironment -ConfigPath .\looseleaf.config.psd1 | Format-Table   # preflight, read-only
+Export-LooseleafNotebook  -ConfigPath .\looseleaf.config.psd1   # stage 1: reads OneNote, writes the work folder
+Update-LooseleafVault     -ConfigPath .\looseleaf.config.psd1   # stage 2: builds the vault (-WhatIf to preview)
 ```
+
+Run the export again after editing notes in OneNote: only changed pages are re-exported. Then run `Update-LooseleafVault` again; notes you edited in Obsidian are left alone.
 
 ## Documentation
 
