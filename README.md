@@ -127,7 +127,14 @@ Looseleaf/
 
 ## Acknowledgements
 
-Looseleaf is inspired by [**ConvertOneNote2MarkDown**](https://github.com/theohbrothers/ConvertOneNote2MarkDown) by The Oh Brothers and contributors. The two-step approach (OneNote → Word → pandoc) and several of the known issues documented here come from that project. ON2MD, Looseleaf's predecessor, wrapped upstream commit [`2fed7c9`](https://github.com/theohbrothers/ConvertOneNote2MarkDown/commit/2fed7c9) (2024-03-16).
+Looseleaf is a standalone rewrite inspired by **ConvertOneNote2MarkDown**. The two-step approach (OneNote → Word → pandoc) and several of the known issues documented here come from that project and the people behind it:
+
+- **Sjoerd de Valk** ([@SjoerdV](https://github.com/SjoerdV)) wrote the [original ConvertOneNote2MarkDown script](https://github.com/SjoerdV/ConvertOneNote2MarkDown) (2019).
+- **Avi Aryan**'s [VSCodeNotebook](https://github.com/aviaryan/VSCodeNotebook) is the work that script was ported from.
+- **[@nixsee](https://github.com/nixsee)** made many improvements in a fork, which was later transferred to The Oh Brothers.
+- **[The Oh Brothers](https://github.com/theohbrothers/ConvertOneNote2MarkDown)** maintain that fork. Looseleaf's predecessor, ON2MD, was a set of fixes wrapped around their commit [`2fed7c9`](https://github.com/theohbrothers/ConvertOneNote2MarkDown/commit/2fed7c9) (2024-03-16).
+
+Looseleaf contains no code from these projects, but it would not exist without them. Thank you.
 
 ## License
 
