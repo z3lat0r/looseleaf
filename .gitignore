@@ -1,0 +1,30 @@
+# Personal configuration (contains local paths and notebook names)
+looseleaf.config.psd1
+*.local.psd1
+
+# Run output
+work/
+logs/
+*.log
+manifest.json
+!tests/fixtures/**/manifest.json
+.looseleaf/
+
+# Exported content (never commit notes)
+*.docx
+*.pdf
+!tests/fixtures/**/*.docx
+
+# Test and tool output
+tests/output/
+TestResults*.xml
+coverage*.xml
+
+# Editor / OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+Thumbs.db
+Desktop.ini
+*.tmp
+*.partial
