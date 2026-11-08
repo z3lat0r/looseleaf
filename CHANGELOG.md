@@ -42,7 +42,7 @@ First release. Export (stage 1), build (stage 2) and preflight work end to end. 
 
 ### Changed
 
-- README acknowledgements credit the whole ConvertOneNote2MarkDown lineage: Sjoerd de Valk (original script), Avi Aryan (VSCodeNotebook), @nixsee and The Oh Brothers.
+- README acknowledgements credit the whole ConvertOneNote2MarkDown lineage: Sjoerd de Valk (original script), Avi Aryan (VSCodeNotebook), nixsee and The Oh Brothers.
 - `CreateObsidianSettings` (default on): a new vault gets `.obsidian\app.json` with settings that match Looseleaf's output. Existing vault settings are never touched.
 - `OrderPrefix` is now `Auto` | `Always` | `Never` (default `Auto`; `$true`/`$false` still work). `Auto` skips prefixes in folders whose names already sort into OneNote order, which avoids double numbering such as `01-1 - Basics`.
 - Names shortened for `MaxPathLength` are cut at a word boundary, and an unclosed bracket is dropped.
