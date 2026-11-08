@@ -56,6 +56,9 @@
     # Notes you edited after the last build: Skip | Backup | Overwrite
     OnModifiedFile      = 'Skip'
 
+    # New vault (no .obsidian folder yet): create matching Obsidian settings
+    CreateObsidianSettings = $true
+
     # --- Stage 2: content (rules C1-C12, docs/DESIGN.md 6.5) ------------------
 
     FrontMatter         = $true

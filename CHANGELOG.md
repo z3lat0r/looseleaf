@@ -31,8 +31,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   - `tools/Invoke-LLPrototype.ps1` is a harness for running them on existing `.docx` files.
   - Validated on 502 reference pages (`docs/DESIGN.md` §12.2).
 
+### Fixed
+
+- **Table values could disappear.** Values in a monospace font inside multi-cell tables became code blocks, the table was then written as HTML, and the code blocks were dropped from it. Code in table cells is now written as inline code in a Markdown table, and empty table rows are removed.
+- Stage 2 temporary files now go under `<WorkPath>\tmp` instead of `%TEMP%`, so one antivirus exclusion for `WorkPath` covers them.
+
 ### Changed
 
+- `CreateObsidianSettings` (default on): a new vault gets `.obsidian\app.json` with settings that match Looseleaf's output. Existing vault settings are never touched.
 - `OrderPrefix` is now `Auto` | `Always` | `Never` (default `Auto`; `$true`/`$false` still work). `Auto` skips prefixes in folders whose names already sort into OneNote order, which avoids double numbering such as `01-1 - Basics`.
 - Names shortened for `MaxPathLength` are cut at a word boundary, and an unclosed bracket is dropped.
 - The stage 2 command is `Update-LooseleafVault` instead of `Build-LooseleafVault`: `Build` isn't an approved verb in Windows PowerShell 5.1.

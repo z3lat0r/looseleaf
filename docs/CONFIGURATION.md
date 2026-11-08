@@ -48,7 +48,8 @@ Copy-Item .\looseleaf.config.example.psd1 .\looseleaf.config.psd1
 | `MaxPathLength` | int | `250` | 100–32000 | Full paths longer than this are shortened, with a warning. Raise it only if Windows long paths are enabled. |
 | `NameSpaces` | string | `Keep` | `Keep`, `Hyphen` | Keep spaces in file and folder names, or replace them with `-`. Image names never contain spaces. |
 | `EmptyPages` | string | `FolderOnly` | `FolderOnly`, `Keep`, `Skip` | Title-only pages (headings and dividers): just a folder for their subpages, a title-only note, or skipped (subpages move up one level). See [DESIGN.md §6.1](DESIGN.md#61-layout). |
-| `OnModifiedFile` | string | `Skip` | `Skip`, `Backup`, `Overwrite` | What a rebuild does with a note you edited after the last build. |
+| `OnModifiedFile` | string | `Skip` | `Skip`, `Backup`, `Overwrite` | What a rebuild does with a note you edited after the last build. Plugins that rewrite notes (for example image downloaders) count as edits. |
+| `CreateObsidianSettings` | bool | `$true` | | If `VaultPath` has no `.obsidian` folder yet, creates `.obsidian\app.json` with settings that match Looseleaf's output: link format per `LinkStyle`, relative links, links updated on rename, and pasted images in the notebook's `media/` folder. An existing vault's settings are never changed. |
 
 ## Stage 2: content
 

@@ -21,6 +21,7 @@ $script:LLConfigSchema = [ordered]@{
     NameSpaces          = @{ Type = 'string'; Default = 'Keep'; Allowed = @('Keep', 'Hyphen') }
     EmptyPages          = @{ Type = 'string'; Default = 'FolderOnly'; Allowed = @('FolderOnly', 'Keep', 'Skip') }
     OnModifiedFile      = @{ Type = 'string'; Default = 'Skip'; Allowed = @('Skip', 'Backup', 'Overwrite') }
+    CreateObsidianSettings = @{ Type = 'bool'; Default = $true }
     # Stage 2: content
     FrontMatter         = @{ Type = 'bool'; Default = $true }
     TitleHeading        = @{ Type = 'bool'; Default = $true }

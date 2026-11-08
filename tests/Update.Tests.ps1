@@ -23,7 +23,22 @@ Describe 'Update-LooseleafVault' {
     New-LLTestDocx -Path (Join-Path $docx 'p1.docx') -Title 'Page One' -Body "Some text.`n`n$box`n`n- item" -WithImage
     New-LLTestDocx -Path (Join-Path $docx 'p2.docx') -Title '----- Linux -----'
     New-LLTestDocx -Path (Join-Path $docx 'p3.docx') -Title 'Child' -Body 'Child text.'
-    New-LLTestDocx -Path (Join-Path $docx 'p4.docx') -Title 'Demo: Colon' -Body 'Use ssh \<user\>@host' # escaped so the fixture contains literal text
+    # Two-column table whose values are code blocks (monospace in OneNote), plus an empty last row.
+    $fence = '```'
+    $codeTable = @(
+        '+-----------+-------------+'
+        '| DB_NAME   | ' + $fence + '         |'
+        '|           | wordpress   |'
+        '|           | ' + $fence + '         |'
+        '+-----------+-------------+'
+        '| DB_USER   | ' + $fence + '         |'
+        '|           | root        |'
+        '|           | ' + $fence + '         |'
+        '+-----------+-------------+'
+        '|           |             |'
+        '+-----------+-------------+'
+    ) -join "`n"
+    New-LLTestDocx -Path (Join-Path $docx 'p4.docx') -Title 'Demo: Colon' -Body ("Use ssh \<user\>@host`n`n" + $codeTable) # escaped so the fixture contains literal text
 
     $p1 = New-LLTestPage 'p1' 'Page One' 1
     $p1.attachments = @([pscustomobject]@{ name = 'notes.txt'; file = 'attachments/p1/notes.txt' })
@@ -94,13 +109,32 @@ Describe 'Update-LooseleafVault' {
         It 'keeps placeholders in text visible (escaped)' {
             [IO.File]::ReadAllText($colon) | Should Match 'ssh \\<user>@host'
         }
+        It 'keeps code-formatted table values as inline code in a Markdown table' {
+            $colonText = [IO.File]::ReadAllText($colon)
+            $colonText | Should Match '\|\s*DB_NAME\s*\|\s*`wordpress`\s*\|'
+            $colonText | Should Match '\|\s*DB_USER\s*\|\s*`root`\s*\|'
+            $colonText | Should Not Match '<table'
+        }
+        It 'drops empty table rows' {
+            # (the empty line above the separator is pandoc's required header row for header-less tables)
+            [IO.File]::ReadAllText($colon) | Should Not Match '`root`\s*\|\r?\n\|\s*\|\s*\|'
+        }
+        It 'makes the vault an Obsidian vault with matching settings' {
+            $app = [IO.File]::ReadAllText((Join-Path $vault '.obsidian\app.json')) | ConvertFrom-Json
+            $app.useMarkdownLinks | Should Be $true
+            $app.attachmentFolderPath | Should BeExactly 'My Notebook/media'
+        }
         It 'saves the build state' {
             Join-Path $nb '.looseleaf\build-state.json' | Should Exist
         }
     }
 
     Context 'rebuild without changes' {
+        [IO.File]::WriteAllText((Join-Path $vault '.obsidian\app.json'), '{ "mine": true }')
         $summary = Update-LooseleafVault -ConfigPath $configPath
+        It 'never touches existing Obsidian settings' {
+            [IO.File]::ReadAllText((Join-Path $vault '.obsidian\app.json')) | Should BeExactly '{ "mine": true }'
+        }
         It 'rewrites nothing' {
             $summary.Created | Should Be 0
             $summary.Updated | Should Be 0

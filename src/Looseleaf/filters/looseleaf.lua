@@ -365,17 +365,50 @@ end
 
 local BR = pandoc.RawInline('markdown', '<br>')
 
--- Make a cell representable in a pipe table: paragraphs joined with <br>.
+-- A code block in a cell (monospace values, rule C2) becomes inline code, one span per line.
+local function codeblock_to_inlines(cb)
+  local out = pandoc.Inlines {}
+  local first = true
+  for line in (trim_text(cb.text) .. '\n'):gmatch('(.-)\n') do
+    if not first then out:insert(BR) end
+    first = false
+    if line ~= '' then out:insert(pandoc.Code(line)) end
+  end
+  return out
+end
+
+-- Make a cell representable in a pipe table: paragraphs and code lines joined with <br>.
+-- Cells with other block content (lists, ...) stay as they are and the table is written as
+-- HTML; their code blocks are tagged 'llcell' so they are not turned into Markdown fences,
+-- which an HTML table would silently drop.
 local function flatten_cell(cell)
-  local blocks = cell.contents
   local inlines = pandoc.Inlines {}
-  for _, b in ipairs(blocks) do
-    if b.t ~= 'Para' and b.t ~= 'Plain' then return end -- lists etc.: keep (HTML table)
-    if #inlines > 0 then inlines:insert(BR) end
-    inlines:extend(b.content)
+  for _, b in ipairs(cell.contents) do
+    local part
+    if b.t == 'Para' or b.t == 'Plain' then
+      part = b.content
+    elseif b.t == 'CodeBlock' then
+      part = codeblock_to_inlines(b)
+    else
+      cell.contents = pandoc.Blocks(cell.contents):walk {
+        CodeBlock = function(cb) cb.classes:insert('llcell'); return cb end,
+      }
+      return
+    end
+    if #part > 0 then
+      if #inlines > 0 then inlines:insert(BR) end
+      inlines:extend(part)
+    end
   end
   inlines = inlines:walk { LineBreak = function() return BR end, SoftBreak = function() return BR end }
   cell.contents = { pandoc.Plain(inlines) }
+end
+
+local function row_is_blank(row)
+  for _, cell in ipairs(row.cells) do
+    if not is_blank(blocks_text(cell.contents)) or contains_media(cell.contents) then return false end
+  end
+  return true
 end
 
 local function handle_table(tbl)
@@ -383,7 +416,15 @@ local function handle_table(tbl)
   if #cells == 1 then
     return box_to_blocks(cells[1])
   end
-  for _, cell in ipairs(cells) do flatten_cell(cell) end
+  -- drop completely empty body rows (OneNote often leaves one at the end)
+  for _, body in ipairs(tbl.bodies) do
+    local rows = pandoc.List {}
+    for _, row in ipairs(body.body) do
+      if not row_is_blank(row) then rows:insert(row) end
+    end
+    body.body = rows
+  end
+  for _, cell in ipairs(table_cells(tbl)) do flatten_cell(cell) end
   return tbl
 end
 
@@ -506,6 +547,17 @@ function Pandoc(doc)
   end
 
   doc = doc:walk { Blocks = merge_code_blocks }
-  doc = doc:walk { CodeBlock = fence_code_block }
+  doc = doc:walk {
+    CodeBlock = function(cb)
+      if cb.classes:includes('llcell') then return nil end -- inside an HTML table: keep as <pre>
+      return fence_code_block(cb)
+    end,
+  }
+  doc = doc:walk {
+    CodeBlock = function(cb)
+      cb.classes = cb.classes:filter(function(c) return c ~= 'llcell' end)
+      return cb
+    end,
+  }
   return doc
 end

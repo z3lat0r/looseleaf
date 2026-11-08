@@ -51,6 +51,12 @@
         if ($Level -eq 'WARN') { Write-Warning $Message } else { Write-Verbose $Message }
     }
 
+    if ($config.CreateObsidianSettings) {
+        if (Initialize-LLObsidianVault -Config $config -Cmdlet $PSCmdlet) {
+            & $log 'INFO' "Created Obsidian vault settings in $(Join-Path $config.VaultPath '.obsidian')"
+        }
+    }
+
     $wanted = @($config.Notebooks)
     $notebooks = @(Get-LLValue $manifest 'notebooks' @())
     foreach ($name in $wanted) {
