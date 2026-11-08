@@ -34,7 +34,7 @@
                                                                   logs/
 
                      +-----------------------------------+
- <WorkPath>/ ------> | Stage 2: Build-LooseleafVault     | -->  <VaultPath>/<Notebook>/
+ <WorkPath>/ ------> | Stage 2: Update-LooseleafVault     | -->  <VaultPath>/<Notebook>/
                      | pandoc + Lua filter -> files      |        NN-Section/NN-Page.md
                      +-----------------------------------+        media/
                                                                   .looseleaf/build-state.json
@@ -313,6 +313,8 @@ These rules come from analysing a real 500-page notebook exported to `.docx` (se
 | Full stage 2 build | Fixture manifest + docx → temp vault, checking the file tree and contents | No |
 | Stage 1 | Manual checklist against a dedicated **test notebook**: see [TEST-NOTEBOOK.md](TEST-NOTEBOOK.md) | Yes |
 
+Tests are written for **Pester 3.4.0, which ships with Windows 10/11**. They also run on Pester 4, so no module needs installing. Test `.docx` files are generated at test time with pandoc from small Markdown snippets, so no binary files are committed. Run them with `powershell -NoProfile -Command "Invoke-Pester .\tests"`.
+
 Fixtures are always **made up**. Personal notebooks are only ever used for local comparison runs and are never committed.
 
 ## 12. Lessons from ON2MD
@@ -370,6 +372,17 @@ Known gaps:
 - Windows UNC paths (`\\host\share`) inside command boxes are auto-linked by pandoc as `file://`.
 - About 100 placeholders in prose are written escaped (`\<enter\>`), which is correct but hard to read in source mode.
 
+### 12.3 Stage 2 results (2026-11-08)
+
+`Update-LooseleafVault` was run twice on the same 502 reference pages. There is no real manifest yet (stage 1 isn't built), so all pages were placed in one flat section. **The folder hierarchy was therefore not tested on real data**; it's covered by the made-up Pester tests until the first real export.
+
+| Run | Time | Result |
+| --- | --- | --- |
+| 1 (empty vault) | 259 s | 410 notes created, 1,725 images, 91 empty pages left out (`FolderOnly`), 1 page failed (antivirus lock, reported with the hint) |
+| 2 (rebuild, nothing changed) | 422 s | 410 unchanged, nothing rewritten, all image names stable |
+
+A rebuild is slower than the first build: it still converts every page and also hashes every existing note and image. That makes open question 5 (incremental builds) worth doing.
+
 ## 13. Open questions
 
 ### Resolved by the prototype
@@ -383,5 +396,5 @@ Known gaps:
 2. **Callout heuristics:** the 8-word sentence rule may need tuning for languages with long compound words. Make it configurable?
 3. **Partial `UpdatePageContent`:** is sending only the changed `OE` elements safe on pages with ink or embedded files? Test on a copy of a notebook.
 4. **Subpage folders:** keep the parent page as `NN-Page.md` next to an `NN-Page/` folder (as planned), or move the parent inside its own folder as a folder note?
-5. **Incremental stage 2:** a full rebuild is the default. Would content hashing to skip unchanged pages be worth the extra complexity for 500+ page notebooks?
+5. **Incremental stage 2:** a full rebuild takes about 7 minutes for 500 pages (§12.3). Proposal: record each page's `.docx` hash and the settings hash in `build-state.json`, and skip conversion when both are unchanged.
 6. **Callout type for non-code boxes:** use one fixed `[!note]` for all, or pick the type from the box's background colour?

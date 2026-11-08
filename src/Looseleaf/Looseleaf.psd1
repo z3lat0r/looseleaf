@@ -11,7 +11,7 @@
     FunctionsToExport    = @(
         'Test-LooseleafEnvironment'
         'Export-LooseleafNotebook'
-        'Build-LooseleafVault'
+        'Update-LooseleafVault'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

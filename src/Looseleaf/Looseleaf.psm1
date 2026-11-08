@@ -1,6 +1,7 @@
 ﻿#Requires -Version 5.1
 # Looseleaf module loader: dot-sources Private\ then Public\ and exports Public functions.
-# Convention: one function per file, file name = function name.
+# Convention: Public\<Command>.ps1 holds exactly that command (exported by file name);
+# Private\<Function>.ps1 holds that function plus small helpers.
 
 Set-StrictMode -Version 3.0
 

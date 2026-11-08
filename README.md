@@ -1,12 +1,14 @@
 # Looseleaf
 
+![Looseleaf: OneNote notebook to Obsidian vault](looseleaf.png)
+
 **Export OneNote notebooks to Obsidian-ready Markdown, locally.** Nothing is uploaded to OneDrive or any other cloud service.
 
 > [!WARNING]
 > **Status: pre-alpha.** The architecture and behaviour are documented in [docs/DESIGN.md](docs/DESIGN.md).
 >
-> - **Done:** a prototype of the conversion core (the `.docx` pre-processing step and the pandoc Lua filter), validated on a 502-page notebook ([§12.2](docs/DESIGN.md#122-prototype-results-2026-11-08)).
-> - **Not yet built:** stage 1 (export) and the full stage 2 (build). The commands below show the *planned* interface.
+> - **Done:** stage 2, `Update-LooseleafVault`, which builds the vault from a work folder. It's tested with Pester and validated on 502 real pages ([§12.3](docs/DESIGN.md#123-stage-2-results-2026-11-08)).
+> - **Not yet built:** stage 1 (`Export-LooseleafNotebook`, the OneNote export that writes the work folder) and `Test-LooseleafEnvironment`. Until stage 1 exists, stage 2 has no real input apart from hand-made test manifests.
 
 ## Why Looseleaf?
 
@@ -29,7 +31,7 @@ Looseleaf runs in two separate stages:
 ```
 
 - **Stage 1, Export** (`Export-LooseleafNotebook`): reads the notebook hierarchy and page order, publishes each page to `.docx`, copies attachments and writes `manifest.json`. Unchanged pages are skipped, so a large notebook that is interrupted can be resumed.
-- **Stage 2, Build** (`Build-LooseleafVault`): converts the `.docx` files to Markdown with pandoc, names images and orders pages, and writes the vault. It never talks to OneNote, so you can tweak settings and rebuild in seconds.
+- **Stage 2, Build** (`Update-LooseleafVault`): converts the `.docx` files to Markdown with pandoc, names images and orders pages, and writes the vault. It never talks to OneNote, so you can change settings and rebuild at any time (about 4–5 minutes for 500 pages).
 
 ## Planned features
 
@@ -65,9 +67,9 @@ Import-Module .\src\Looseleaf
 
 Copy-Item .\looseleaf.config.example.psd1 .\looseleaf.config.psd1   # once, then edit
 
-Test-LooseleafEnvironment -ConfigPath .\looseleaf.config.psd1   # preflight, read-only
-Export-LooseleafNotebook  -ConfigPath .\looseleaf.config.psd1   # stage 1 (OneNote open)
-Build-LooseleafVault      -ConfigPath .\looseleaf.config.psd1   # stage 2
+Test-LooseleafEnvironment -ConfigPath .\looseleaf.config.psd1   # preflight, read-only (planned)
+Export-LooseleafNotebook  -ConfigPath .\looseleaf.config.psd1   # stage 1, OneNote open (planned)
+Update-LooseleafVault     -ConfigPath .\looseleaf.config.psd1   # stage 2 (available; -WhatIf to preview)
 ```
 
 ## Documentation
@@ -88,7 +90,7 @@ Looseleaf/
 ├── CHANGELOG.md
 ├── LICENSE                         GPL-3.0
 ├── looseleaf.config.example.psd1   configuration template
-├── PSScriptAnalyzerSettings.psd1   lint rules
+├── PSScriptAnalyzerSettings.psd1   optional lint rules (only if you have PSScriptAnalyzer)
 ├── docs/                           design and user documentation
 ├── src/Looseleaf/                  PowerShell module
 │   ├── Looseleaf.psd1              module manifest
@@ -97,7 +99,7 @@ Looseleaf/
 │   ├── Private/                    internal helpers (LL prefix)
 │   └── filters/                    pandoc Lua filters (looseleaf.lua)
 ├── tools/                          development tools (Invoke-LLPrototype.ps1)
-└── tests/                          Pester 5 tests
+└── tests/                          Pester tests (built-in Pester 3.4)
     └── fixtures/                   sample .docx files and manifests
 ```
 
@@ -109,12 +111,13 @@ Looseleaf/
 .\tools\Invoke-LLPrototype.ps1 -DocxPath <folder with .docx> -OutputPath $env:TEMP\looseleaf-proto -Limit 20
 ```
 
-- **Tests:** [Pester 5](https://pester.dev) (`Invoke-Pester .\tests`). Stage 2 and all naming logic are tested without OneNote.
-- **Lint:** [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer) (`Invoke-ScriptAnalyzer -Path .\src -Recurse -Settings .\PSScriptAnalyzerSettings.psd1`).
+- **No extra dependencies.** Using Looseleaf needs only Windows PowerShell 5.1, OneNote desktop and pandoc. Development needs nothing more.
+- **Tests:** written for **Pester 3.4.0, which ships with Windows 10/11**, so nothing needs installing. They also run on Pester 4. Run them in Windows PowerShell: `powershell -NoProfile -Command "Invoke-Pester .\tests"`. Stage 2 and all naming logic are tested without OneNote; the build tests need pandoc.
+- **Lint (optional):** if you have [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer) installed: `Invoke-ScriptAnalyzer -Path .\src -Recurse -Settings .\PSScriptAnalyzerSettings.psd1`. It isn't required.
 - **Conventions:**
-  - Public commands use approved verbs and the `Looseleaf` noun prefix (`Build-LooseleafVault`).
+  - Public commands use approved verbs and the `Looseleaf` noun prefix (`Update-LooseleafVault`).
   - Private helpers use the `LL` prefix (`Get-LLSafeFileName`).
-  - One function per file, named after the function.
+  - One public command per file in `Public/`, and the file name is the command name, because the loader exports by file name. Files in `Private/` are named after their main function and may also hold its small helpers.
   - PowerShell files are UTF-8 **with BOM** and CRLF line endings, so Windows PowerShell 5.1 reads them correctly. Markdown is UTF-8 with LF. See [.editorconfig](.editorconfig) and [.gitattributes](.gitattributes).
   - Personal files (`looseleaf.config.psd1`, logs, work folders) are git-ignored.
 

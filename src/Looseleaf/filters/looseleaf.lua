@@ -41,7 +41,9 @@ local opt = {
 local function read_options(meta)
   for key, _ in pairs(opt) do
     local value = meta['looseleaf-' .. key]
-    if value ~= nil then
+    if type(value) == 'boolean' then
+      opt[key] = tostring(value) -- -M key=true arrives as a YAML boolean
+    elseif value ~= nil then
       opt[key] = stringify(value)
     end
   end

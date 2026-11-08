@@ -63,12 +63,12 @@ All rules are described in [DESIGN.md §6.5](DESIGN.md#65-content-rules) (C1–C
 | `MonospaceFonts` | string[] | `Consolas`, `Cascadia Code`, `Cascadia Mono`, `Courier New`, `Lucida Console`, `Source Code Pro`, `Fira Code`, `JetBrains Mono` | | Fonts treated as code. Matched case-insensitively; hyphens and spaces are ignored. |
 | `BoxTables` | string | `Auto` | `Auto`, `CodeBlock`, `Callout`, `Unwrap`, `Table` | Single-cell tables (C1). Boxes holding headings, tables or images are always unwrapped. `Auto`: a code block if at least `BoxCodeThreshold` of the text is monospace, or if the box doesn't read like prose; otherwise a callout. |
 | `BoxCodeThreshold` | double | `0.6` | 0.0–1.0 | Share of monospace characters that makes a box a code block. |
-| `ComplexTables` | string | `Html` | `Html`, `Flatten` | Tables that pipe tables can't represent (merged cells, block content) (C3). |
+| `ComplexTables` | string | `Html` | `Html` | Tables that pipe tables can't represent (merged cells, block content) (C3). `Flatten` is planned. |
 | `IndentedParagraphs` | string | `Unindent` | `Unindent`, `Quote` | Indented OneNote paragraphs: unwrap the block quotes pandoc creates, or keep them as quotes (C4). |
 | `ConvertGlyphBullets` | bool | `$true` | | Turns paragraphs starting with `●`, `•`, `○`, `▪`, `◦`, `+` or `–` into list items (C5). |
 | `CleanEscapes` | string | `Safe` | `Safe`, `None` | Removes only backslash escapes that change nothing. `<`, `>` and `&` are never unescaped (C7). |
 | `Underline` | string | `Html` | `Html`, `Drop` | Underlined text: `<u>text</u>` or plain text (C8). Highlighted text always becomes `==text==`. |
-| `ClipSources` | string | `Normalize` | `Normalize`, `FrontMatter`, `Keep` | OneNote's `From <url>` / `Pasted from <url>` lines (C9). |
+| `ClipSources` | string | `Normalize` | `Normalize`, `Keep` | OneNote's `From <url>` / `Pasted from <url>` lines (C9). `FrontMatter` is planned. |
 | `ImageWidth` | string | `Obsidian` | `Obsidian`, `Drop` | Write OneNote image sizes as Obsidian width (`![\|800](…)`) or drop them (C10). |
 | `MaxImageWidth` | int | `1000` | 100–4000 | Upper limit for the image width in pixels. |
 | `NewLine` | string | `LF` | `LF`, `CRLF` | Line endings of the generated Markdown. |

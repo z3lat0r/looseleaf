@@ -10,7 +10,7 @@
     <OutputPath>\<title>.md plus images to <OutputPath>\media\. Prints a summary with artefact counts.
 
     This is a prototype harness for validating the content rules (docs/DESIGN.md 6.5). It is not
-    the stage 2 command (Build-LooseleafVault) and does not apply naming, ordering or the media registry.
+    the stage 2 command (Update-LooseleafVault) and does not apply naming, ordering or the media registry.
 
 .EXAMPLE
     .\tools\Invoke-LLPrototype.ps1 -DocxPath D:\Looseleaf\work\docx -OutputPath $env:TEMP\ll-proto -Limit 20
